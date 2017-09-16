@@ -1,0 +1,55 @@
+package exercise.circuitbreaker.answer;
+
+import exercise.circuitbreaker.IExternalService;
+
+import java.util.*;
+
+public class CircuitBreakerStub implements ICircuitBreaker
+{
+    Map<IExternalService, HealthMonitor> serviceMonitorMap = new HashMap<IExternalService, HealthMonitor>();
+
+    public CircuitBreakerStub()
+    {
+
+    }
+
+    public void startRemoteServiceRecurrentMonitor(IExternalService remoteServiceChecker)
+    {
+        RecurrentHealthMonitor monitor = new RecurrentHealthMonitor(remoteServiceChecker);
+        serviceMonitorMap.put(remoteServiceChecker, monitor);
+
+        (new Thread(monitor)).start();
+    }
+
+    public void stopRemoteServiceRecurrentMonitor(IExternalService remoteServiceChecker)
+    {
+        HealthMonitor monitor = serviceMonitorMap.get(remoteServiceChecker);
+        monitor.setInterrupted(true);
+
+        serviceMonitorMap.remove(remoteServiceChecker);
+    }
+
+    public void startRemoteServiceExponentialBackoffMonitor(IExternalService remoteServiceChecker)
+    {
+        ExponentialBackoffMonitor monitor = new ExponentialBackoffMonitor(remoteServiceChecker);
+        serviceMonitorMap.put(remoteServiceChecker, monitor);
+
+        (new Thread(monitor)).start();
+    }
+
+    public void stopRemoteServiceExponentialBackoffMonitor(IExternalService remoteServiceChecker)
+    {
+        HealthMonitor monitor = serviceMonitorMap.get(remoteServiceChecker);
+        monitor.setInterrupted(true);
+
+        serviceMonitorMap.remove(remoteServiceChecker);
+    }
+
+    @Override
+    public boolean isHealthy(IExternalService remoteServiceChecker)
+    {
+        HealthMonitor monitor = serviceMonitorMap.get(remoteServiceChecker);
+
+        return monitor.isRemoteServiceHealthy();
+    }
+}
